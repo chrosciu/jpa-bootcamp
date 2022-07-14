@@ -1,0 +1,12 @@
+version: '3.1'
+
+services:
+
+  postgres:
+    image: postgres:14.4-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bootcamp
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin

@@ -1,0 +1,28 @@
+<persistence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
+                      http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+             version="2.0" xmlns="http://java.sun.com/xml/ns/persistence">
+
+    <persistence-unit name="bootcamp">
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/bootcamp" />
+            <property name="javax.persistence.jdbc.user" value="admin" />
+            <property name="javax.persistence.jdbc.password" value="admin" />
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL10Dialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="create" />
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+
+<!--            <property name="hibernate.cache.use_second_level_cache" value="true"/>-->
+<!--            <property name="hibernate.cache.region.factory_class" value="jcache"/>-->
+<!--            <property name="hibernate.javax.cache.provider" value="org.ehcache.jsr107.EhcacheCachingProvider"/>-->
+<!--            <property name="hibernate.cache.use_query_cache" value="true"/>-->
+
+            <property name="hibernate.generate_statistics" value="true"/>
+
+<!--            <property name="javax.persistence.validation.mode" value="NONE"/>-->
+        </properties>
+    </persistence-unit>
+</persistence>
