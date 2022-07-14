@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.chrosciu.domain.Employee;
+import com.chrosciu.domain.Team;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.persistence.EntityManager;
@@ -27,11 +28,13 @@ class JpaTest {
 
     private EntityManagerFactory entityManagerFactory;
     private Employee employee;
+    private Team team;
 
     @BeforeEach
     void setUp() {
         entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         employee = testEmployee();
+        team = testTeam();
     }
 
     @AfterEach
@@ -68,6 +71,12 @@ class JpaTest {
         return Employee.builder()
             .firstName("Janusz")
             .lastName("Bukowy")
+            .build();
+    }
+
+    private Team testTeam() {
+        return Team.builder()
+            .name("Druciarze")
             .build();
     }
 
@@ -201,6 +210,49 @@ class JpaTest {
         });
     }
 
+    @Test
+    void when_persisting_entity_cascaded_entities_are_also_persisted() {
+        employee.setTeam(team);
+        runInTransaction(entityManager -> {
+            entityManager.persist(employee);
+        });
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals(team.getName(), persistedTeam.getName());
+            assertEquals(1, persistedTeam.getEmployees().size());
+            assertEquals(employee.getFirstName(), persistedTeam.getEmployees().get(0).getFirstName());
+        });
+    }
+    @Test
+    void when_removing_entity_cascaded_entities_are_also_removed() {
+        employee.setTeam(team);
+        runInTransaction(entityManager -> {
+            entityManager.persist(employee);
+        });
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            entityManager.remove(persistedTeam);
+        });
+        runInTransaction(entityManager -> {
+            var persistedEmployee = entityManager.find(Employee.class, employee.getId());
+            assertNull(persistedEmployee);
+        });
+    }
 
+    @Test
+    void when_entity_is_orphaned_it_is_removed_with_orphan_removal_flag() {
+        employee.setTeam(team);
+        runInTransaction(entityManager -> {
+            entityManager.persist(employee);
+        });
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            persistedTeam.getEmployees().clear();
+        });
+        runInTransaction(entityManager -> {
+            var persistedEmployee = entityManager.find(Employee.class, employee.getId());
+            assertNull(persistedEmployee);
+        });
+    }
 
 }

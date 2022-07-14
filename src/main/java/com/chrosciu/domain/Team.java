@@ -1,34 +1,30 @@
 package com.chrosciu.domain;
 
-import com.chrosciu.validator.NoCommonNames;
+import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.validation.constraints.Size;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@NoCommonNames
-public class Employee {
-
+@ToString(exclude = {"employees"})
+public class Team {
     @GeneratedValue
     @Id
     private Long id;
 
-    private String firstName;
+    private String name;
 
-    @Size(max = 20)
-    private String lastName;
-
-    @ManyToOne(cascade = {CascadeType.PERSIST})
-    private Team team;
+    @OneToMany(mappedBy = "team", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, orphanRemoval = true)
+    private List<Employee> employees;
 }
