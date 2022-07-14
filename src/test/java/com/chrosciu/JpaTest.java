@@ -13,6 +13,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import javax.persistence.RollbackException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
@@ -253,6 +254,27 @@ class JpaTest {
             var persistedEmployee = entityManager.find(Employee.class, employee.getId());
             assertNull(persistedEmployee);
         });
+    }
+
+    @Test
+    void pre_persist_callback_can_change_entity_fields_to_be_saved() {
+        team.setName("Wajchowi");
+        runInTransaction(entityManager -> {
+            entityManager.persist(team);
+        });
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals("Magicy", persistedTeam.getName());
+        });
+    }
+
+    @Test
+    void post_persist_callback_can_rollback_transaction() {
+        team.setName("Czarodzieje");
+        var rollbackException = assertThrows(RollbackException.class, () -> {
+            runInTransaction(entityManager ->  entityManager.persist(team));
+        });
+        assertEquals("Takich tu nie chcemy!", rollbackException.getCause().getMessage());
     }
 
 }

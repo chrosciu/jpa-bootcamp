@@ -1,8 +1,10 @@
 package com.chrosciu.domain;
 
+import com.chrosciu.listener.TeamListener;
 import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -18,6 +20,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @ToString(exclude = {"employees"})
+@EntityListeners({TeamListener.class})
 public class Team {
     @GeneratedValue
     @Id
