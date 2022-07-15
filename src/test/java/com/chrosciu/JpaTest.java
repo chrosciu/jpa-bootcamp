@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.Team;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.persistence.EntityManager;
@@ -20,31 +22,47 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Slf4j
 class JpaTest {
 
     private EntityManagerFactory entityManagerFactory;
+    private Statistics statistics;
     private Employee employee;
+    private Employee otherEmployee;
     private Team team;
+    private List<Employee> employeesProxy;
 
     @BeforeEach
     void setUp() {
         entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
-        employee = testEmployee();
-        team = testTeam();
+        statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        employee = employee();
+        otherEmployee = otherEmployee();
+        team = team();
     }
 
     @AfterEach
     void cleanUp() {
+        log.info("{}", statistics);
+        if (statistics != null) {
+            statistics.clear();
+            statistics = null;
+        }
         if (entityManagerFactory != null) {
             entityManagerFactory.close();
             entityManagerFactory = null;
         }
         employee = null;
+        team = null;
     }
 
     private void runInTransaction(Consumer<EntityManager> action) {
@@ -68,14 +86,21 @@ class JpaTest {
         }
     }
 
-    private Employee testEmployee() {
+    private Employee employee() {
         return Employee.builder()
             .firstName("Janusz")
             .lastName("Bukowy")
             .build();
     }
 
-    private Team testTeam() {
+    private Employee otherEmployee() {
+        return Employee.builder()
+            .firstName("Mirek")
+            .lastName("Jaworek")
+            .build();
+    }
+
+    private Team team() {
         return Team.builder()
             .name("Druciarze")
             .build();
@@ -210,26 +235,29 @@ class JpaTest {
             });
         });
     }
+    
+    private void createTeamWithEmployees() {
+        runInTransaction(entityManager -> {
+            employee.setTeam(team);
+            otherEmployee.setTeam(team);
+            entityManager.persist(employee);
+            entityManager.persist(otherEmployee);
+        });
+    }
 
     @Test
     void when_persisting_entity_cascaded_entities_are_also_persisted() {
-        employee.setTeam(team);
-        runInTransaction(entityManager -> {
-            entityManager.persist(employee);
-        });
+        createTeamWithEmployees();
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             assertEquals(team.getName(), persistedTeam.getName());
-            assertEquals(1, persistedTeam.getEmployees().size());
+            assertEquals(2, persistedTeam.getEmployees().size());
             assertEquals(employee.getFirstName(), persistedTeam.getEmployees().get(0).getFirstName());
         });
     }
     @Test
     void when_removing_entity_cascaded_entities_are_also_removed() {
-        employee.setTeam(team);
-        runInTransaction(entityManager -> {
-            entityManager.persist(employee);
-        });
+        createTeamWithEmployees();
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             entityManager.remove(persistedTeam);
@@ -242,10 +270,7 @@ class JpaTest {
 
     @Test
     void when_entity_is_orphaned_it_is_removed_with_orphan_removal_flag() {
-        employee.setTeam(team);
-        runInTransaction(entityManager -> {
-            entityManager.persist(employee);
-        });
+        createTeamWithEmployees();
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             persistedTeam.getEmployees().clear();
@@ -253,6 +278,69 @@ class JpaTest {
         runInTransaction(entityManager -> {
             var persistedEmployee = entityManager.find(Employee.class, employee.getId());
             assertNull(persistedEmployee);
+        });
+    }
+
+    @Test
+    @Disabled("need to drop all cascades in Employee class on team field")
+    void given_entities_with_relations_when_persist_some_entities_then_throws_exception() {
+        employee.setTeam(team);
+        assertThrows(RollbackException.class, () -> runInTransaction(entityManager -> entityManager.persist(employee)));
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_then_return_root_entity_without_dependent_ones() {
+        createTeamWithEmployees();
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals(1, statistics.getEntityLoadCount());
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_then_lazy_loads_dependent_ones() {
+        createTeamWithEmployees();
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            var employees = persistedTeam.getEmployees();
+            assertEquals(1, statistics.getEntityLoadCount());
+            employees.forEach(e -> log.info("{}", e));
+            assertEquals(3, statistics.getEntityLoadCount());
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_access_dependent_fields_and_transaction_is_closed_then_throws_an_exception() {
+        createTeamWithEmployees();
+        runInTransaction(entityManager -> employeesProxy = entityManager.find(Team.class, team.getId()).getEmployees());
+        assertThrows(LazyInitializationException.class, () -> employeesProxy.forEach(ep -> log.info("{}", ep)));
+    }
+
+    @Test
+    void given_entities_with_relations_when_join_fetch_dependent_entities_they_are_loaded() {
+        createTeamWithEmployees();
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager
+                .createQuery("from Team as t join fetch t.employees e where t.id = :id", Team.class)
+                .setParameter("id", team.getId())
+                .getSingleResult();
+            assertEquals(3, statistics.getEntityLoadCount());
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_with_entity_graph_then_returns_post_with_tags() {
+        createTeamWithEmployees();
+        runInTransaction(entityManager -> {
+//            var entityGraph = entityManager.createEntityGraph(Team.class);
+//            entityGraph.addAttributeNodes("employees");
+             var entityGraph = entityManager.createEntityGraph(Team.WITH_EMPLOYEES);
+            // All attributes specified in entity graph will be treated as Eager, and all attribute not specified will be treated as Lazy
+            // Map<String, Object> properties = Map.of("jakarta.persistence.fetchgraph", entityGraph);
+            // All attributes specified in entity graph will be treated as Eager, and all attribute not specified use their default/mapped value
+            Map<String, Object> properties = Map.of("jakarta.persistence.loadgraph", entityGraph);
+            var persistedTeam = entityManager.find(Team.class, team.getId(), properties);
+            assertEquals(3, statistics.getEntityLoadCount());
         });
     }
 
