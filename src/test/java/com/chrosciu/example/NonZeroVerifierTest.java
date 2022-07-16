@@ -1,7 +1,7 @@
 package com.chrosciu.example;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ public class NonZeroVerifierTest {
         var result = nonZeroVerifier.verify(1);
 
         //then
-        assertEquals(1, result);
+        assertThat(result).isEqualTo(1);
     }
 
     @Test
@@ -25,16 +25,10 @@ public class NonZeroVerifierTest {
         var nonZeroVerifier = new NonZeroVerifier();
 
         //when /then
-        var exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThatThrownBy(() -> {
             nonZeroVerifier.verify(0);
-        }, "Exception not thrown");
-        assertEquals("Zero is not allowed", exception.getMessage(), "Improper exception message");
-//        try {
-//            var result = nonZeroVerifier.verify(0);
-//            Assertions.fail();
-//        } catch (IllegalArgumentException e) {
-//            Assertions.assertEquals("Zero is not allowed", e.getMessage());
-//        }
+        }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Zero");
+
     }
 
 }

@@ -21,6 +21,7 @@ public class Persist {
                 var persistedCompany = entityManager.find(Company.class, company.getId());
                 log.info("{}", persistedCompany);
             });
+
 //            EntityManager entityManager = entityManagerFactory.createEntityManager();
 //            EntityTransaction transaction = entityManager.getTransaction();
 //            try {
