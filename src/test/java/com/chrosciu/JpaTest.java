@@ -7,13 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.Team;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
+import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
 import javax.persistence.RollbackException;
 import javax.validation.ConstraintViolation;
@@ -364,5 +368,61 @@ class JpaTest {
         });
         assertEquals("Takich tu nie chcemy!", rollbackException.getCause().getMessage());
     }
+
+    @Test
+    @Disabled("@Version field in Team must be removed")
+    void given_no_locks_last_committed_transaction_wins() throws InterruptedException {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        execute(List.of(
+            new UpdateTeamNameTask(team.getId(), "Wajchowi", LockModeType.NONE, 1, 5, entityManagerFactory),
+            new UpdateTeamNameTask(team.getId(), "Magicy", LockModeType.NONE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals("Wajchowi", persistedTeam.getName());
+        });
+    }
+
+    @Test
+    void given_versioned_entity_when_first_transaction_tires_to_override_changes_from_second_transaction_then_first_transaction_is_rolled_back() throws InterruptedException {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        execute(List.of(
+            new UpdateTeamNameTask(team.getId(), "Wajchowi", LockModeType.NONE, 1, 5, entityManagerFactory),
+            new UpdateTeamNameTask(team.getId(), "Magicy", LockModeType.NONE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals("Magicy", persistedTeam.getName());
+        });
+    }
+
+    @Test
+    void given_two_transactions_when_first_transactions_acquired_the_lock_then_second_transaction_waits_for_first_transaction_to_release_the_lock() throws InterruptedException {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        execute(List.of(
+            new UpdateTeamNameTask(team.getId(), "Wajchowi", LockModeType.PESSIMISTIC_WRITE, 1, 5, entityManagerFactory),
+            new UpdateTeamNameTask(team.getId(), "Magicy", LockModeType.PESSIMISTIC_WRITE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertEquals("Magicy", persistedTeam.getName());
+        });
+    }
+
+    static void execute(List<Task> tasks) throws InterruptedException {
+        var countDownLatch = new CountDownLatch(tasks.size());
+        var executor = Executors.newFixedThreadPool(tasks.size());
+        tasks.forEach(task -> {
+            task.setCountDownLatch(countDownLatch);
+            executor.submit(task);
+        });
+        countDownLatch.await();
+    }
+
+    public interface Task extends Runnable {
+        void setCountDownLatch(CountDownLatch countDownLatch);
+    }
+
+
 
 }

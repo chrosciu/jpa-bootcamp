@@ -10,6 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedAttributeNode;
 import javax.persistence.NamedEntityGraph;
 import javax.persistence.OneToMany;
+import javax.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +32,9 @@ public class Team {
     @GeneratedValue
     @Id
     private Long id;
+
+    @Version
+    private long version;
 
     private String name;
 
