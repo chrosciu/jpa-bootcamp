@@ -10,7 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @Slf4j
 class JpaTest {
@@ -30,8 +32,8 @@ class JpaTest {
 
     @AfterEach
     void cleanUp() {
-        log.info("{}", statistics);
         if (statistics != null) {
+            log.info("{}", statistics);
             statistics.clear();
             statistics = null;
         }
@@ -40,6 +42,7 @@ class JpaTest {
             entityManagerFactory = null;
         }
         employee = null;
+        otherEmployee = null;
     }
 
     private void runInTransaction(Consumer<EntityManager> action) {
@@ -75,6 +78,14 @@ class JpaTest {
             .firstName("Mirek")
             .lastName("Jaworek")
             .build();
+    }
+
+    @Test
+    void shouldBeNoEmployeesInDb() {
+        runInTransaction(entityManager -> {
+            var employees = entityManager.createQuery("from Employee", Employee.class).getResultList();
+            Assertions.assertEquals(0, employees.size());
+        });
     }
 
 }
