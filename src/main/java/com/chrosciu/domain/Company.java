@@ -1,5 +1,6 @@
 package com.chrosciu.domain;
 
+import com.chrosciu.validator.JanuszProhibited;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -22,5 +23,6 @@ public class Company {
     private Long id;
 
     @NotBlank
+    @JanuszProhibited
     private String name;
 }
