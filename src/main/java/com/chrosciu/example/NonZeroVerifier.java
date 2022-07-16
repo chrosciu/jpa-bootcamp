@@ -5,7 +5,7 @@ public class NonZeroVerifier {
         if (input != 0) {
             return input;
         } else {
-            throw new IllegalArgumentException("Zero is not allowed here");
+            throw new IllegalArgumentException("Zero is not allowed");
         }
     }
 }
