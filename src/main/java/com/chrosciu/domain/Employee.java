@@ -1,5 +1,6 @@
 package com.chrosciu.domain;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -25,6 +26,6 @@ public class Employee {
 
     private String lastName;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     private Team team;
 }

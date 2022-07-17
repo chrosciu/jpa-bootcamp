@@ -98,4 +98,18 @@ class JpaTest {
         });
     }
 
+    private void createTeamWithEmployees() {
+        runInTransaction(entityManager -> {
+            employee.setTeam(team);
+            otherEmployee.setTeam(team);
+            entityManager.persist(employee);
+            entityManager.persist(otherEmployee);
+        });
+    }
+
+    @Test
+    void teamShouldBeSavedWithEmployees() {
+        Assertions.assertDoesNotThrow(() -> createTeamWithEmployees());
+    }
+
 }
