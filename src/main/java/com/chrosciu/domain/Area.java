@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Data
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 @Entity
 @Slf4j
+@ToString(exclude = "companies")
 public class Area {
     @GeneratedValue
     @Id

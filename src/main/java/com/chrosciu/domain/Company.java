@@ -1,6 +1,8 @@
 package com.chrosciu.domain;
 
 import com.chrosciu.listener.CompanyListener;
+import java.util.ArrayList;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
@@ -36,8 +38,18 @@ public class Company {
     //@JanuszProhibited
     private String name;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.PERSIST})
     private Area area;
+
+    public void assignArea(Area area) {
+        this.area = area;
+        if (area != null) {
+            if (null == area.getCompanies()) {
+                area.setCompanies(new ArrayList<>());
+            }
+            area.getCompanies().add(this);
+        }
+    }
 
     @PrePersist
     public void prePersist() {
