@@ -2,11 +2,15 @@ package com.chrosciu;
 
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.Team;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -110,6 +114,52 @@ class JpaTest {
     @Test
     void teamShouldBeSavedWithEmployees() {
         Assertions.assertDoesNotThrow(() -> createTeamWithEmployees());
+    }
+
+    @SneakyThrows
+    static void executeInParallel(List<Runnable> tasks) {
+        var count = tasks.size();
+        var latch = new CountDownLatch(count);
+        var executor = Executors.newFixedThreadPool(count);
+        tasks.forEach(task -> {
+            executor.submit(() -> {
+                try {
+                    task.run();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        });
+        latch.await();
+    }
+
+    @Test
+    void shouldRunTasksInParallel() {
+        Runnable task1 = new Runnable() {
+            @Override
+            @SneakyThrows
+            public void run() {
+                log.info("[1] started");
+                Thread.sleep(1000);
+                log.info("[1] after 1 sleep");
+                Thread.sleep(5000);
+                log.info("[1] finished");
+            }
+        };
+        Runnable task2 = new Runnable() {
+            @Override
+            @SneakyThrows
+            public void run() {
+                log.info("[2] started");
+                Thread.sleep(2000);
+                log.info("[2] after 1 sleep");
+                Thread.sleep(3000);
+                log.info("[2] finished");
+            }
+        };
+        log.info("before execute");
+        executeInParallel(List.of(task1, task2));
+        log.info("after execute");
     }
 
 }
