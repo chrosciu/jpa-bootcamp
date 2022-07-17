@@ -20,6 +20,7 @@ import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
@@ -236,6 +237,7 @@ class JpaTest {
     }
 
     @Test
+    @Disabled("Does not work with @Version field in Team - see test below")
     void teamNameIsChangedToLastCommittedOneInCaseOfParallelChanges() {
         runInTransaction(entityManager -> entityManager.persist(team));
         runInTransaction(entityManager -> {
@@ -250,6 +252,24 @@ class JpaTest {
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             assertThat(persistedTeam.getName()).isEqualTo("Wajchowi");
+        });
+    }
+
+    @Test
+    void teamNameIsChangedToFirstCommittedWithOptimisticLock() {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
+        });
+        executeInParallel(List.of(
+                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5),
+                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3)
+            )
+        );
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Magicy");
         });
     }
 
