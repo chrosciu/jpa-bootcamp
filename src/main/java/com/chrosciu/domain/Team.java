@@ -1,13 +1,15 @@
 package com.chrosciu.domain;
 
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Data
@@ -16,15 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 @Entity
 @Slf4j
-public class Employee {
+@ToString(exclude = "employees")
+
+public class Team {
     @GeneratedValue
     @Id
     private Long id;
 
-    private String firstName;
+    private String name;
 
-    private String lastName;
-
-    @ManyToOne
-    private Team team;
+    @OneToMany(mappedBy = "team")
+    private List<Employee> employees;
 }

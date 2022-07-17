@@ -1,6 +1,7 @@
 package com.chrosciu;
 
 import com.chrosciu.domain.Employee;
+import com.chrosciu.domain.Team;
 import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -21,6 +22,7 @@ class JpaTest {
     private Statistics statistics;
     private Employee employee;
     private Employee otherEmployee;
+    private Team team;
 
     @BeforeEach
     void setUp() {
@@ -28,6 +30,7 @@ class JpaTest {
         statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         employee = employee();
         otherEmployee = otherEmployee();
+        team = team();
     }
 
     @AfterEach
@@ -43,6 +46,7 @@ class JpaTest {
         }
         employee = null;
         otherEmployee = null;
+        team = null;
     }
 
     private void runInTransaction(Consumer<EntityManager> action) {
@@ -77,6 +81,12 @@ class JpaTest {
         return Employee.builder()
             .firstName("Mirek")
             .lastName("Jaworek")
+            .build();
+    }
+
+    private Team team() {
+        return Team.builder()
+            .name("Druciarze")
             .build();
     }
 

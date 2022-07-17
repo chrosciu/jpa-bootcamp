@@ -1,9 +1,12 @@
 package com.chrosciu.domain;
 
 import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
 import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,13 +22,16 @@ import lombok.extern.slf4j.Slf4j;
 @Entity
 @Slf4j
 @ToString(exclude = "companies")
+@NamedEntityGraph(name = Area.WITH_COMPANIES, attributeNodes = @NamedAttributeNode("companies"))
 public class Area {
+    public static final String WITH_COMPANIES = "areaWithCompanies";
+
     @GeneratedValue
     @Id
     private Long id;
 
     private String name;
 
-    @OneToMany(mappedBy = "area")
+    @OneToMany(mappedBy = "area", cascade = {CascadeType.REMOVE})
     private List<Company> companies;
 }
