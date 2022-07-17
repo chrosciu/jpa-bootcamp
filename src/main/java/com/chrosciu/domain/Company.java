@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -41,6 +43,11 @@ public class Company {
 
     @ManyToOne(cascade = {CascadeType.PERSIST}, fetch = FetchType.LAZY)
     private Area area;
+
+    private int size;
+
+    @Enumerated(EnumType.STRING)
+    private CompanyType companyType;
 
     public void assignArea(Area area) {
         this.area = area;
