@@ -4,10 +4,35 @@ import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
+import javax.persistence.Persistence;
 
 public class Utils {
 
-    public static void runInEmf(EntityManagerFactory emf, Consumer<EntityManager> action) {
+    public static void runMultipleTransactions(Iterable<Consumer<EntityManager>> actions) {
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
+        try {
+            for (var action: actions) {
+                runInTransaction(entityManagerFactory, action);
+            }
+        } finally {
+            if (entityManagerFactory != null) {
+                entityManagerFactory.close();
+            }
+        }
+    }
+
+    public static void runInPersistence(Consumer<EntityManagerFactory> action) {
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
+        try {
+            action.accept(entityManagerFactory);
+        } finally {
+            if (entityManagerFactory != null) {
+                entityManagerFactory.close();
+            }
+        }
+    }
+
+    public static void runInTransaction(EntityManagerFactory emf, Consumer<EntityManager> action) {
         EntityManager entityManager = null;
         EntityTransaction transaction = null;
         try {

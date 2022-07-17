@@ -1,8 +1,9 @@
 package com.chrosciu.app;
 
+import static com.chrosciu.app.Utils.runInPersistence;
+import static com.chrosciu.app.Utils.runInTransaction;
+
 import com.chrosciu.domain.Company;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -12,19 +13,14 @@ public class Callbacks {
         Company company = Company.builder()
             .name("Januszex")
             .build();
-        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
-        try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+        runInPersistence(entityManagerFactory -> {
+            runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            runInTransaction(entityManagerFactory, entityManager -> {
                 var persistedCompany = entityManager.find(Company.class, company.getId());
             });
-        } finally {
-            if (entityManagerFactory != null) {
-                entityManagerFactory.close();
-            }
-        }
+        });
     }
 
 

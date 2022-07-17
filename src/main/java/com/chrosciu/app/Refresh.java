@@ -14,13 +14,13 @@ public class Refresh {
             .build();
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 var persistedCompany = entityManager.find(Company.class, company.getId());
 
-                Utils.runInEmf(entityManagerFactory, em -> {
+                Utils.runInTransaction(entityManagerFactory, em -> {
                     var pc = em.find(Company.class, company.getId());
                     pc.setName("Mirex");
                 });

@@ -12,13 +12,13 @@ public class UpdatePersisted {
             .build();
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
                 company.setName("Cebula Ltd.");
                 entityManager.flush();
                 company.setName("Mirekpol");
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 company.setName("Marcin Sp z.o.o");
             });
         } finally {

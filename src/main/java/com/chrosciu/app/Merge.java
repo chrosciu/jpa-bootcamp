@@ -14,10 +14,10 @@ public class Merge {
             .build();
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 //entityManager.persist(company); -> exception !
 
                 company.setName("Cebulpol");

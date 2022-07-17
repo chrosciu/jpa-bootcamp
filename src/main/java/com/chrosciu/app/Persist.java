@@ -14,10 +14,10 @@ public class Persist {
             .build();
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 var persistedCompany = entityManager.find(Company.class, company.getId());
                 log.info("{}", persistedCompany);
             });

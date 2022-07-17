@@ -12,15 +12,15 @@ public class Remove {
             .build();
         EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("bootcamp");
         try {
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 entityManager.persist(company);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
                 //entityManager.remove(company);
                 var persistedCompany = entityManager.find(Company.class, company.getId());
                 entityManager.remove(persistedCompany);
             });
-            Utils.runInEmf(entityManagerFactory, entityManager -> {
+            Utils.runInTransaction(entityManagerFactory, entityManager -> {
 //                company.setId(null); NO WAY !
 //                entityManager.persist(company);
             });
