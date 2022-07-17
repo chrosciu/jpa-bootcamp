@@ -1,5 +1,7 @@
 package com.chrosciu;
 
+import static javax.persistence.LockModeType.NONE;
+import static javax.persistence.LockModeType.PESSIMISTIC_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chrosciu.domain.Employee;
@@ -11,6 +13,7 @@ import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
+import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -172,6 +175,7 @@ class JpaTest {
         private final String newName;
         private final long sleepBeforeLoad;
         private final long sleepAfterLoad;
+        private final LockModeType lockModeType;
 
         private void log(String message) {
             log.info("[{}] " + message, newName);
@@ -196,7 +200,7 @@ class JpaTest {
                 Thread.sleep(1000 * sleepBeforeLoad);
 
                 log("before load");
-                var team = entityManager.find(Team.class, teamId);
+                var team = entityManager.find(Team.class, teamId, lockModeType);
                 log("after load");
 
                 Thread.sleep(1000 * sleepAfterLoad);
@@ -229,7 +233,7 @@ class JpaTest {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
         });
-        executeInParallel(List.of(new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 2)));
+        executeInParallel(List.of(new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 2, NONE)));
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             assertThat(persistedTeam.getName()).isEqualTo("Wajchowi");
@@ -245,8 +249,8 @@ class JpaTest {
             assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
         });
         executeInParallel(List.of(
-                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5),
-                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3)
+                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5, NONE),
+                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3, NONE)
             )
         );
         runInTransaction(entityManager -> {
@@ -263,8 +267,8 @@ class JpaTest {
             assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
         });
         executeInParallel(List.of(
-                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5),
-                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3)
+                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5, NONE),
+                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3, NONE)
             )
         );
         runInTransaction(entityManager -> {
@@ -272,5 +276,25 @@ class JpaTest {
             assertThat(persistedTeam.getName()).isEqualTo("Magicy");
         });
     }
+
+    @Test
+    void teamNameIsChangedToXWithPessimisticLock() {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
+        });
+        executeInParallel(List.of(
+                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5, PESSIMISTIC_WRITE),
+                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3, PESSIMISTIC_WRITE)
+            )
+        );
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Magicy");
+        });
+    }
+
+
 
 }
