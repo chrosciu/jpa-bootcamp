@@ -188,23 +188,23 @@ class JpaTest {
                 entityManager = entityManagerFactory.createEntityManager();
                 transaction = entityManager.getTransaction();
 
-                log.info("started");
+                log("started");
 
                 transaction.begin();
 
                 Thread.sleep(1000 * sleepBeforeLoad);
 
-                log.info("before load");
+                log("before load");
                 var team = entityManager.find(Team.class, teamId);
-                log.info("after load");
+                log("after load");
 
                 Thread.sleep(1000 * sleepAfterLoad);
 
                 team.setName(newName);
 
-                log.info("before commit");
+                log("before commit");
                 transaction.commit();
-                log.info("after commit");
+                log("after commit");
 
             } catch (Throwable t) {
                 logException("Exception in task: ", t);
@@ -229,6 +229,24 @@ class JpaTest {
             assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
         });
         executeInParallel(List.of(new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 2)));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Wajchowi");
+        });
+    }
+
+    @Test
+    void teamNameIsChangedToLastCommittedOneInCaseOfParallelChanges() {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
+        });
+        executeInParallel(List.of(
+                new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 5),
+                new UpdateTeamNameTask(team.getId(), "Magicy", 2, 3)
+            )
+        );
         runInTransaction(entityManager -> {
             var persistedTeam = entityManager.find(Team.class, team.getId());
             assertThat(persistedTeam.getName()).isEqualTo("Wajchowi");
