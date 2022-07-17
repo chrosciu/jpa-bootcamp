@@ -1,6 +1,7 @@
 package com.chrosciu.app;
 
 import com.chrosciu.domain.Area;
+import com.chrosciu.domain.Area_;
 import com.chrosciu.domain.Company;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +32,9 @@ public class EntityGraph {
                 entityManager.persist(otherCompany);
             });
             Utils.runInTransaction(entityManagerFactory, entityManager -> {
-//                var entityGraph = entityManager.createEntityGraph(Area.class);
-//                entityGraph.addAttributeNodes("companies");
-                var entityGraph = entityManager.createEntityGraph(Area.WITH_COMPANIES);
+                var entityGraph = entityManager.createEntityGraph(Area.class);
+                entityGraph.addAttributeNodes(Area_.companies);
+//                var entityGraph = entityManager.createEntityGraph(Area.WITH_COMPANIES);
                 // All attributes specified in entity graph will be treated as Eager, and all attribute not specified will be treated as Lazy
                 // Map<String, Object> properties = Map.of("jakarta.persistence.fetchgraph", entityGraph);
                 // All attributes specified in entity graph will be treated as Eager, and all attribute not specified use their default/mapped value
