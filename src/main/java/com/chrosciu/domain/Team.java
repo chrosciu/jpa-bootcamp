@@ -5,6 +5,8 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.NamedAttributeNode;
@@ -37,6 +39,9 @@ public class Team {
     private long version;
 
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    private TeamType teamType;
 
     @OneToMany(mappedBy = "team", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, orphanRemoval = true)
     private List<Employee> employees;
