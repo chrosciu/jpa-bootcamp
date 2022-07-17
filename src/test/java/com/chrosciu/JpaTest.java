@@ -1,5 +1,7 @@
 package com.chrosciu;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.Team;
 import java.util.List;
@@ -10,6 +12,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
@@ -160,6 +163,76 @@ class JpaTest {
         log.info("before execute");
         executeInParallel(List.of(task1, task2));
         log.info("after execute");
+    }
+
+    @RequiredArgsConstructor
+    class UpdateTeamNameTask implements Runnable {
+        private final long teamId;
+        private final String newName;
+        private final long sleepBeforeLoad;
+        private final long sleepAfterLoad;
+
+        private void log(String message) {
+            log.info("[{}] " + message, newName);
+        }
+
+        private void logException(String message, Throwable t) {
+            log.warn("[{}] " + message, newName, t);
+        }
+
+        @Override
+        public void run() {
+            EntityManager entityManager = null;
+            EntityTransaction transaction = null;
+            try {
+                entityManager = entityManagerFactory.createEntityManager();
+                transaction = entityManager.getTransaction();
+
+                log.info("started");
+
+                transaction.begin();
+
+                Thread.sleep(1000 * sleepBeforeLoad);
+
+                log.info("before load");
+                var team = entityManager.find(Team.class, teamId);
+                log.info("after load");
+
+                Thread.sleep(1000 * sleepAfterLoad);
+
+                team.setName(newName);
+
+                log.info("before commit");
+                transaction.commit();
+                log.info("after commit");
+
+            } catch (Throwable t) {
+                logException("Exception in task: ", t);
+            } finally {
+                if (transaction != null && transaction.isActive()) {
+                    log("before rollback");
+                    transaction.rollback();
+                    log("after rollback");
+                }
+                if (entityManager != null) {
+                    entityManager.close();
+                }
+            }
+        }
+    }
+
+    @Test
+    void teamNameShouldBeChangedIfSingleTaskIsExecuted() {
+        runInTransaction(entityManager -> entityManager.persist(team));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Druciarze");
+        });
+        executeInParallel(List.of(new UpdateTeamNameTask(team.getId(), "Wajchowi", 1, 2)));
+        runInTransaction(entityManager -> {
+            var persistedTeam = entityManager.find(Team.class, team.getId());
+            assertThat(persistedTeam.getName()).isEqualTo("Wajchowi");
+        });
     }
 
 }
