@@ -11,6 +11,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
 import javax.persistence.PostLoad;
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
@@ -32,7 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 @Entity
 @Slf4j
 @EntityListeners(CompanyListener.class)
+@NamedQuery(name = Company.FIND_BY_TYPE, query = "from Company c where c.companyType = :companyType")
 public class Company {
+    public static final String FIND_BY_TYPE = "Company.findByType";
+
     @GeneratedValue
     @Id
     private Long id;

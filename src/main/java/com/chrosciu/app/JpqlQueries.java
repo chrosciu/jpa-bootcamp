@@ -1,8 +1,9 @@
 package com.chrosciu.app;
 
+import static com.chrosciu.domain.CompanyType.JANUSZEX;
+
 import com.chrosciu.domain.Company;
 import com.chrosciu.domain.CompanyType;
-import com.chrosciu.dto.CompanyTypeAndCount;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -11,13 +12,13 @@ public class JpqlQueries {
     public static void main(String[] args) {
         Company januszpol = Company.builder()
             .name("Januszpol")
-            .companyType(CompanyType.JANUSZEX)
+            .companyType(JANUSZEX)
             .size(5)
             .build();
 
         Company mirex = Company.builder()
             .name("Mirex")
-            .companyType(CompanyType.JANUSZEX)
+            .companyType(JANUSZEX)
             .size(3)
             .build();
 
@@ -166,13 +167,30 @@ public class JpqlQueries {
 //                log.info("{}", result);
 //            });
 
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "select new com.chrosciu.dto.CompanyTypeAndCount(c.companyType, count(c)) from Company c group by c.companyType";
+//                var result = entityManager
+//                    .createQuery(query, CompanyTypeAndCount.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = entityManager.createNamedQuery(Company.FIND_BY_TYPE, Company.class);
+//                var result = query
+//                    .setParameter("companyType", CompanyType.JANUSZEX)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
             Utils.runInTransaction(entityManagerFactory, entityManager -> {
-                var query = "select new com.chrosciu.dto.CompanyTypeAndCount(c.companyType, count(c)) from Company c group by c.companyType";
-                var result = entityManager
-                    .createQuery(query, CompanyTypeAndCount.class)
-                    .getResultList();
+                var query = "update Company c set c.size = c.size * 2 where c.companyType = com.chrosciu.domain.CompanyType.JANUSZEX";
+                var result = entityManager.createQuery(query).executeUpdate();
                 log.info("{}", result);
             });
+
+
+
 
         });
     }
