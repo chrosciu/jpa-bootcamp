@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.EmployeeType;
+import com.chrosciu.domain.Employee_;
 import com.chrosciu.domain.Team;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -16,6 +18,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
+import javax.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
@@ -354,6 +357,47 @@ class JpaTest {
         Integer minAge;
         Integer maxAge;
         List<String> firstNames;
+    }
+
+    private static List<Employee> findEmployeesWithCriteria(EntityManager entityManager, EmployeeQuery employeeQuery) {
+        var criteriaBuilder = entityManager.getCriteriaBuilder();
+        var criteriaQuery = criteriaBuilder.createQuery(Employee.class);
+        var root = criteriaQuery.from(Employee.class);
+        criteriaQuery.select(root);
+
+        var predicates = new ArrayList<Predicate>();
+
+        if (employeeQuery.getEmployeeType() != null) {
+            var namePredicate = criteriaBuilder.equal(root.get(Employee_.employeeType), employeeQuery.employeeType);
+            predicates.add(namePredicate);
+        }
+
+        if (employeeQuery.getMinAge() != null) {
+            var namePredicate = criteriaBuilder.greaterThan(root.get(Employee_.age), employeeQuery.getMinAge());
+            predicates.add(namePredicate);
+        }
+
+        if (employeeQuery.getMaxAge() != null) {
+            var namePredicate = criteriaBuilder.lessThan(root.get(Employee_.age), employeeQuery.getMaxAge());
+            predicates.add(namePredicate);
+        }
+
+        if (employeeQuery.getFirstNames() != null) {
+            var firstNamePredicates = new ArrayList<Predicate>();
+            for (var firstName: employeeQuery.getFirstNames()) {
+                firstNamePredicates.add(criteriaBuilder.equal(root.get(Employee_.firstName), firstName));
+            }
+            var firstNamePredicatesArray = firstNamePredicates.toArray(new Predicate[0]);
+            var firstNamePredicate = criteriaBuilder.or(firstNamePredicatesArray);
+            predicates.add(firstNamePredicate);
+        }
+
+        var predicatesArray = predicates.toArray(new Predicate[0]);
+        criteriaQuery.where(predicatesArray);
+
+        var typedQuery = entityManager.createQuery(criteriaQuery);
+        var result = typedQuery.getResultList();
+        return result;
     }
 
 }
