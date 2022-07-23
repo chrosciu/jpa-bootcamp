@@ -18,6 +18,7 @@ import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -345,6 +346,13 @@ class JpaTest {
     @Test
     void multipleTeamsShouldBeSavedWithEmployees() {
         Assertions.assertDoesNotThrow(() -> createMultipleTeamsWithEmployees());
+    }
+
+    @Value
+    class EmployeeQuery {
+        EmployeeType employeeType;
+        Integer minAge;
+        Integer maxAge;
     }
 
 }
