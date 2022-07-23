@@ -34,8 +34,10 @@ class JpaTest {
     private Statistics statistics;
     private Employee employee;
     private Employee otherEmployee;
+    private Employee aloneEmployee;
     private Team team;
     private Team otherTeam;
+    private Team aloneTeam;
 
     @BeforeEach
     void setUp() {
@@ -43,8 +45,10 @@ class JpaTest {
         statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         employee = employee();
         otherEmployee = otherEmployee();
+        aloneEmployee = aloneEmployee();
         team = team();
         otherTeam = otherTeam();
+        aloneTeam = aloneTeam();
 
     }
 
@@ -61,8 +65,10 @@ class JpaTest {
         }
         employee = null;
         otherEmployee = null;
+        aloneEmployee = null;
         team = null;
         otherTeam = null;
+        aloneTeam = null;
     }
 
     private void runInTransaction(Consumer<EntityManager> action) {
@@ -104,6 +110,15 @@ class JpaTest {
             .build();
     }
 
+    private Employee aloneEmployee() {
+        return Employee.builder()
+            .firstName("Boleslaw")
+            .lastName("Wstydliwy")
+            .employeeType(EmployeeType.REMOTE)
+            .age(40)
+            .build();
+    }
+
     private Team team() {
         return Team.builder()
             .name("Druciarze")
@@ -113,6 +128,12 @@ class JpaTest {
     private Team otherTeam() {
         return Team.builder()
             .name("Spawacze")
+            .build();
+    }
+
+    private Team aloneTeam() {
+        return Team.builder()
+            .name("Zwyciezcy")
             .build();
     }
 
@@ -316,6 +337,8 @@ class JpaTest {
             otherEmployee.setTeam(otherTeam);
             entityManager.persist(employee);
             entityManager.persist(otherEmployee);
+            entityManager.persist(aloneEmployee);
+            entityManager.persist(aloneTeam);
         });
     }
 
