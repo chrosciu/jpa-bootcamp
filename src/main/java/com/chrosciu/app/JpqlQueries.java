@@ -2,18 +2,33 @@ package com.chrosciu.app;
 
 import static com.chrosciu.domain.CompanyType.JANUSZEX;
 
+import com.chrosciu.domain.Area;
 import com.chrosciu.domain.Company;
 import com.chrosciu.domain.CompanyType;
+import com.chrosciu.dto.Names;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class JpqlQueries {
 
     public static void main(String[] args) {
+        Area poland = Area.builder()
+            .name("Polska")
+            .build();
+
+        Area global = Area.builder()
+            .name("Global")
+            .build();
+
+        Area america = Area.builder()
+            .name("America")
+            .build();
+
         Company januszpol = Company.builder()
             .name("Januszpol")
             .companyType(JANUSZEX)
             .size(5)
+            .area(poland)
             .build();
 
         Company mirex = Company.builder()
@@ -26,12 +41,14 @@ public class JpqlQueries {
             .name("Urzad Skarbowy")
             .companyType(CompanyType.BUDZETOWKA)
             .size(100)
+            .area(poland)
             .build();
 
         Company google = Company.builder()
             .name("Google")
             .companyType(CompanyType.KORPO)
             .size(10000)
+            .area(global)
             .build();
 
         Utils.runInPersistence(entityManagerFactory -> {
@@ -40,6 +57,7 @@ public class JpqlQueries {
                 entityManager.persist(mirex);
                 entityManager.persist(fiskus);
                 entityManager.persist(google);
+                entityManager.persist(america);
             });
 
 //            Utils.runInTransaction(entityManagerFactory, entityManager -> {
@@ -183,11 +201,65 @@ public class JpqlQueries {
 //                log.info("{}", result);
 //            });
 
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "update Company c set c.size = c.size * 2 where c.companyType = com.chrosciu.domain.CompanyType.JANUSZEX";
+//                var result = entityManager.createQuery(query).executeUpdate();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "from Company";
+//                var result = entityManager.createQuery(query, Company.class)
+//                    .setMaxResults(2)
+//                    .setFirstResult(2)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "from Company c where c.name='JANUSZPOL'";
+//                var result = entityManager.createQuery(query, Company.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "from Company c where c.area.name = 'Global'";
+//                var result = entityManager.createQuery(query, Company.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "select new com.chrosciu.dto.NameAndCount(c.area.name, count(c)) from Company c group by c.area.name";
+//                var result = entityManager.createQuery(query, NameAndCount.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "select new com.chrosciu.dto.AreaAndCount(c.area, count(c)) from Company c group by c.area";
+//                var result = entityManager.createQuery(query, AreaAndCount.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
+//            Utils.runInTransaction(entityManagerFactory, entityManager -> {
+//                var query = "select c.name from Area a join a.companies c";
+//                var result = entityManager.createQuery(query, String.class)
+//                    .getResultList();
+//                log.info("{}", result);
+//            });
+
             Utils.runInTransaction(entityManagerFactory, entityManager -> {
-                var query = "update Company c set c.size = c.size * 2 where c.companyType = com.chrosciu.domain.CompanyType.JANUSZEX";
-                var result = entityManager.createQuery(query).executeUpdate();
+                var query = "select new com.chrosciu.dto.Names(c.name, c.area.name) from Company c left join c.area";
+                var result = entityManager.createQuery(query, Names.class)
+                    .getResultList();
                 log.info("{}", result);
             });
+
+
+
 
 
 
