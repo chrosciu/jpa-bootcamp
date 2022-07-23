@@ -353,6 +353,7 @@ class JpaTest {
         EmployeeType employeeType;
         Integer minAge;
         Integer maxAge;
+        List<String> firstNames;
     }
 
 }
