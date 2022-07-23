@@ -5,6 +5,7 @@ import static javax.persistence.LockModeType.PESSIMISTIC_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chrosciu.domain.Employee;
+import com.chrosciu.domain.EmployeeType;
 import com.chrosciu.domain.Team;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -85,6 +86,8 @@ class JpaTest {
         return Employee.builder()
             .firstName("Janusz")
             .lastName("Bukowy")
+            .employeeType(EmployeeType.ONSITE)
+            .age(50)
             .build();
     }
 
@@ -92,6 +95,8 @@ class JpaTest {
         return Employee.builder()
             .firstName("Mirek")
             .lastName("Jaworek")
+            .employeeType(EmployeeType.REMOTE)
+            .age(45)
             .build();
     }
 

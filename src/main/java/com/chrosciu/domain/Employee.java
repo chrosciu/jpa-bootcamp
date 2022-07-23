@@ -2,6 +2,8 @@ package com.chrosciu.domain;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -25,6 +27,11 @@ public class Employee {
     private String firstName;
 
     private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    private EmployeeType employeeType;
+
+    private int age;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Team team;
