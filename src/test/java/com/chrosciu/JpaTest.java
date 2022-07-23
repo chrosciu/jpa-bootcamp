@@ -35,6 +35,7 @@ class JpaTest {
     private Employee employee;
     private Employee otherEmployee;
     private Team team;
+    private Team otherTeam;
 
     @BeforeEach
     void setUp() {
@@ -43,6 +44,8 @@ class JpaTest {
         employee = employee();
         otherEmployee = otherEmployee();
         team = team();
+        otherTeam = otherTeam();
+
     }
 
     @AfterEach
@@ -59,6 +62,7 @@ class JpaTest {
         employee = null;
         otherEmployee = null;
         team = null;
+        otherTeam = null;
     }
 
     private void runInTransaction(Consumer<EntityManager> action) {
@@ -103,6 +107,12 @@ class JpaTest {
     private Team team() {
         return Team.builder()
             .name("Druciarze")
+            .build();
+    }
+
+    private Team otherTeam() {
+        return Team.builder()
+            .name("Spawacze")
             .build();
     }
 
@@ -300,8 +310,18 @@ class JpaTest {
         });
     }
 
+    private void createMultipleTeamsWithEmployees() {
+        runInTransaction(entityManager -> {
+            employee.setTeam(team);
+            otherEmployee.setTeam(otherTeam);
+            entityManager.persist(employee);
+            entityManager.persist(otherEmployee);
+        });
+    }
 
-
-
+    @Test
+    void multipleTeamsShouldBeSavedWithEmployees() {
+        Assertions.assertDoesNotThrow(() -> createMultipleTeamsWithEmployees());
+    }
 
 }
