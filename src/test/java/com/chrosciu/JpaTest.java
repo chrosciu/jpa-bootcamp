@@ -1,17 +1,17 @@
 package com.chrosciu;
 
 import com.chrosciu.domain.Employee;
+import com.chrosciu.util.DbUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
-import java.util.function.Consumer;
 
 @Slf4j
 class JpaTest {
@@ -43,27 +43,6 @@ class JpaTest {
         employee = null;
     }
 
-    private void runInTransaction(Consumer<EntityManager> action) {
-        EntityManager entityManager = null;
-        EntityTransaction transaction = null;
-        try {
-            entityManager = entityManagerFactory.createEntityManager();
-            transaction = entityManager.getTransaction();
-            transaction.begin();
-            action.accept(entityManager);
-            transaction.commit();
-        } catch (Throwable t) {
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
-            }
-            throw t;
-        } finally {
-            if (entityManager != null) {
-                entityManager.close();
-            }
-        }
-    }
-
     private Employee employee() {
         return Employee.builder()
             .firstName("Janusz")
@@ -76,6 +55,14 @@ class JpaTest {
             .firstName("Mirek")
             .lastName("Jaworek")
             .build();
+    }
+
+    @Test
+    void shouldBeNoEmployeesInDb() {
+        DbUtils.runInTransaction(entityManagerFactory, entityManager -> {
+            var employees = entityManager.createQuery("from Employee", Employee.class).getResultList();
+            Assertions.assertEquals(0, employees.size());
+        });
     }
 
 }
