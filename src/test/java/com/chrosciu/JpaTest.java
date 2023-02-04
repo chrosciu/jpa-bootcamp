@@ -6,12 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 class JpaTest {
@@ -60,8 +61,9 @@ class JpaTest {
     @Test
     void shouldBeNoEmployeesInDb() {
         DbUtils.runInTransaction(entityManagerFactory, entityManager -> {
-            var employees = entityManager.createQuery("from Employee", Employee.class).getResultList();
-            Assertions.assertEquals(0, employees.size());
+            var employees = entityManager.createQuery("select e from Employee e", Employee.class).getResultList();
+            assertThat(employees).isEmpty();
+
         });
     }
 
