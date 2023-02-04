@@ -18,6 +18,8 @@ public class Merge {
             DbUtils.runInTransaction(entityManagerFactory, entityManager -> {
                 //entityManager.persist(company);
 
+                company.setName("Mirex");
+
                 log.info("Before merge");
 
                 var persistedCompany = entityManager.merge(company);
