@@ -1,6 +1,6 @@
 package com.chrosciu.domain;
 
-import com.chrosciu.validator.JanuszProhibited;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,8 +12,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.validation.constraints.NotBlank;
+import javax.persistence.OneToMany;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -22,15 +22,13 @@ import javax.validation.constraints.NotBlank;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class Company {
+public class Area {
     @Id
     @GeneratedValue
     private Long id;
 
-    @NotBlank
-    @JanuszProhibited
     private String name;
 
-    @ManyToOne(optional = false, cascade = {CascadeType.PERSIST})
-    private Area area;
+    @OneToMany(mappedBy = "area", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, orphanRemoval = true)
+    Set<Company> companies;
 }
