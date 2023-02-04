@@ -6,12 +6,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -20,16 +20,13 @@ import javax.persistence.ManyToOne;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Slf4j
-public class Employee {
+public class Team {
     @GeneratedValue
     @Id
     private Long id;
 
-    private String firstName;
+    private String name;
 
-    private String lastName;
-
-    @ManyToOne(optional = false)
-    private Team team;
+    @OneToMany(mappedBy = "employee")
+    private Set<Employee> employees;
 }
