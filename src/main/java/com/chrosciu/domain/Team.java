@@ -27,6 +27,6 @@ public class Team {
 
     private String name;
 
-    @OneToMany(mappedBy = "employee")
+    @OneToMany(mappedBy = "team")
     private Set<Employee> employees;
 }
