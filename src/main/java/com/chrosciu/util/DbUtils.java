@@ -35,12 +35,10 @@ public final class DbUtils {
             action.accept(entityManager);
 
             transaction.commit();
-        } catch (Throwable t) {
+        } finally {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
-            throw t;
-        } finally {
             if (entityManager != null) {
                 entityManager.close();
             }
