@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.Version;
 import java.util.Set;
 
 @Getter
@@ -29,4 +30,7 @@ public class Team {
 
     @OneToMany(mappedBy = "team")
     private Set<Employee> employees;
+
+    @Version
+    private long version;
 }
