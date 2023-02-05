@@ -12,17 +12,22 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
 import javax.persistence.OneToMany;
 import java.util.Set;
 
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "companies")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@NamedEntityGraph(name = Area.WITH_COMPANIES, attributeNodes = @NamedAttributeNode(Area_.COMPANIES))
 public class Area {
+    public static final String WITH_COMPANIES = "areaWithCompanies";
+
     @Id
     @GeneratedValue
     private Long id;
