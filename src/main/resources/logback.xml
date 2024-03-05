@@ -5,7 +5,7 @@
         </encoder>
     </appender>
 
-    <logger name="org.hibernate.type" level="TRACE"/>
+    <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
