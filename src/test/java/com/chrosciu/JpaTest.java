@@ -1,20 +1,18 @@
 package com.chrosciu;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.chrosciu.domain.Employee;
 import com.chrosciu.domain.Team;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
@@ -26,17 +24,19 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.hibernate.LazyInitializationException;
-import org.hibernate.SessionFactory;
-import org.hibernate.stat.Statistics;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 class JpaTest {
@@ -222,6 +222,7 @@ class JpaTest {
     }
 
     @Test
+    @Disabled("Message depends on default Locale - test is unwieldy")
     void programmatic_validation_will_detect_all_constraint_violations() {
         employee.setLastName("A veeeeeeeeeeeeeeeeeeeeeeeeeryyyyyyyy looooooooong naaaaaameeeeeeee!");
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -372,23 +373,18 @@ class JpaTest {
         assertEquals("Takich tu nie chcemy!", rollbackException.getCause().getMessage());
     }
 
-    static void execute(List<Runnable> tasks) throws InterruptedException {
-        var countDownLatch = new CountDownLatch(tasks.size());
-        var executor = Executors.newFixedThreadPool(tasks.size());
-        tasks.forEach(task -> {
-            executor.submit(() -> {
-                try {
-                    task.run();
-                } finally {
-                    countDownLatch.countDown();
-                }
-            });
-        });
-        countDownLatch.await();
+    @SneakyThrows
+    static void execute(List<Callable<?>> tasks) {
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            for (var task : tasks) {
+                scope.fork(task);
+            }
+            scope.join();//.throwIfFailed();
+        }
     }
 
     @RequiredArgsConstructor
-    class UpdateTeamNameTask implements Runnable {
+    class UpdateTeamNameTask implements Callable<Void> {
         private final long teamId;
         private final String newName;
         private final LockModeType lockModeType;
@@ -405,7 +401,7 @@ class JpaTest {
 
         @Override
         @SneakyThrows
-        public void run() {
+        public Void call() {
             EntityManager entityManager = null;
             EntityTransaction transaction = null;
             try {
@@ -435,6 +431,7 @@ class JpaTest {
                     entityManager.close();
                 }
             }
+            return null;
         }
     }
 
