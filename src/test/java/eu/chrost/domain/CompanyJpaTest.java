@@ -1,6 +1,5 @@
 package eu.chrost.domain;
 
-import eu.chrost.util.Utils;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +7,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static eu.chrost.util.Utils.runAsync;
+import static eu.chrost.util.Utils.runInTransaction;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Slf4j
 class CompanyJpaTest {
@@ -45,7 +47,7 @@ class CompanyJpaTest {
 
     @Test
     void givenAnEmptyDatabase_whenLoadAllEntities_thenEmptyCollectionIsReturned() {
-        Utils.runInTransaction(entityManagerFactory, entityManager -> {
+        runInTransaction(entityManagerFactory, entityManager -> {
             var companies = entityManager.createQuery("from Company", Company.class).getResultList();
             assertThat(companies).isEmpty();
         });
@@ -53,12 +55,83 @@ class CompanyJpaTest {
 
     @Test
     void givenAnEntityObject_whenPersist_thenEntityStateIsSavedIntoDatabase() {
-        Utils.runInTransaction(entityManagerFactory, entityManager -> {
+        runInTransaction(entityManagerFactory, entityManager -> {
             entityManager.persist(company);
         });
-        Utils.runInTransaction(entityManagerFactory, entityManager -> {
+        runInTransaction(entityManagerFactory, entityManager -> {
             var persistedCompany = entityManager.find(Company.class, company.getId());
             assertThat(persistedCompany.getName()).isEqualTo(company.getName());
+        });
+    }
+
+    @Test
+    void givenAnManagedEntity_whenEntityStateIsChanged_thenEntityStateIsAutomaticallySynchronizedWithDatabase() {
+        var newName = "Cebulpol S.A.";
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            company.setName(newName);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(persistedCompany.getName()).isEqualTo(newName);
+        });
+    }
+
+    @Test
+    void givenADetachedEntity_whenMerge_thenEntityStateIsAutomaticallySynchronizedWithDatabase() {
+        var newName = "Cebulpol S.A.";
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            company.setName(newName);
+            var managedCompany = entityManager.merge(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(persistedCompany.getName()).isEqualTo(newName);
+        });
+    }
+
+    @Test
+    void givenAManagedEntity_whenRemove_thenEntityStateIsRemovedFromDatabase() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            entityManager.remove(persistedCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(persistedCompany).isNull();
+        });
+    }
+
+    @Test
+    void givenADetachedEntity_whenRemove_thenExceptionIsThrown() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.detach(company);
+            assertThatThrownBy(() -> entityManager.remove(company)).isInstanceOf(IllegalArgumentException.class);
+        });
+    }
+
+    @Test
+    void givenAnManagedEntity_whenRefresh_thenEntityStateIsSynchronizedWithDatabaseState() {
+        var newName = "Cebulpol S.A.";
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            runAsync(() -> runInTransaction(entityManagerFactory, em -> {
+                var pc = em.find(Company.class, company.getId());
+                pc.setName(newName);
+            }));
+            persistedCompany.setName("Mirex");
+            entityManager.refresh(persistedCompany);
+            assertThat(persistedCompany.getName()).isEqualTo(newName);
         });
     }
 }
