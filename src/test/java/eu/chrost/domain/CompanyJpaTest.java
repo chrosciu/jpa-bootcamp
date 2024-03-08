@@ -5,9 +5,16 @@ import jakarta.persistence.Persistence;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static eu.chrost.util.Utils.runAsync;
 import static eu.chrost.util.Utils.runInTransaction;
@@ -17,26 +24,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Slf4j
 class CompanyJpaTest {
     private EntityManagerFactory entityManagerFactory;
-    //private Statistics statistics;
+    private Statistics statistics;
     private Company company;
+    private Company otherCompany;
     private Area area;
 
     @BeforeEach
     void setUp() {
         entityManagerFactory = Persistence.createEntityManagerFactory("workshop");
-        //statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
 
         company = company();
+        otherCompany = otherCompany();
         area = area();
     }
 
     @AfterEach
     void cleanUp() {
-//        if (statistics != null) {
-//            log.info("{}", statistics);
-//            statistics.clear();
-//            statistics = null;
-//        }
+        if (statistics != null) {
+            log.info("{}", statistics);
+            statistics.clear();
+            statistics = null;
+        }
         if (entityManagerFactory != null) {
             entityManagerFactory.close();
             entityManagerFactory = null;
@@ -46,6 +55,12 @@ class CompanyJpaTest {
     private Company company() {
         return Company.builder()
                 .name("Januszex sp. z o.o.")
+                .build();
+    }
+
+    private Company otherCompany() {
+        return Company.builder()
+                .name("Cebulpol S.A.")
                 .build();
     }
 
@@ -229,6 +244,106 @@ class CompanyJpaTest {
         runInTransaction(entityManagerFactory, entityManager -> {
             var persistedCompany = entityManager.find(Company.class, company.getId());
             assertThat(persistedCompany).isNull();
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_then_return_root_entity_without_dependent_ones() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(1);
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_then_lazy_loads_dependent_ones() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            var companies = persistedArea.getCompanies();
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(1);
+            companies.forEach(c -> log.info("{}", c));
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_access_dependent_fields_and_transaction_is_closed_then_throws_an_exception() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        AtomicReference<List<Company>> companiesProxy = new AtomicReference<>();
+        runInTransaction(entityManagerFactory, entityManager -> {
+            companiesProxy.set(entityManager.find(Area.class, area.getId()).getCompanies());
+        });
+        assertThatThrownBy(() -> companiesProxy.get().forEach(ep -> log.info("{}", ep)))
+                .isInstanceOf(LazyInitializationException.class);
+    }
+
+    @Test
+    void given_entities_with_relations_when_join_fetch_dependent_entities_they_are_loaded() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager
+                    .createQuery("from Area as a join fetch a.companies c where a.id = :id", Area.class)
+                    .setParameter("id", area.getId())
+                    .getSingleResult();
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_with_entity_graph_then_returns_post_with_tags() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var entityGraph = entityManager.createEntityGraph(Area.class);
+            entityGraph.addAttributeNodes("companies");
+            // All attributes specified in entity graph will be treated as Eager, and all attribute not specified will be treated as Lazy
+            // Map<String, Object> properties = Map.of("jakarta.persistence.fetchgraph", entityGraph);
+            // All attributes specified in entity graph will be treated as Eager, and all attribute not specified use their default/mapped value
+            Map<String, Object> properties = Map.of("jakarta.persistence.loadgraph", entityGraph);
+            var persistedArea = entityManager.find(Area.class, area.getId(), properties);
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void given_entities_with_relations_when_find_with_named_entity_graph_then_returns_post_with_tags() {
+        company.setArea(area);
+        otherCompany.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+            entityManager.persist(otherCompany);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var entityGraph = entityManager.createEntityGraph(Area.WITH_COMPANIES);
+            Map<String, Object> properties = Map.of("jakarta.persistence.loadgraph", entityGraph);
+            var persistedArea = entityManager.find(Area.class, area.getId(), properties);
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(3);
         });
     }
 }

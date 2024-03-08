@@ -14,7 +14,9 @@ import java.util.function.Consumer;
 public class Utils {
     public static void runInTransaction(EntityManagerFactory entityManagerFactory, Consumer<EntityManager> action) {
         EntityTransaction transaction = null;
-        try (EntityManager entityManager = entityManagerFactory.createEntityManager()) {
+        EntityManager entityManager = null;
+        try {
+            entityManager = entityManagerFactory.createEntityManager();
             transaction = entityManager.getTransaction();
             transaction.begin();
             action.accept(entityManager);
@@ -24,6 +26,10 @@ public class Utils {
                 transaction.setRollbackOnly();
             }
             throw t;
+        } finally {
+            if (entityManager != null) {
+                entityManager.close();
+            }
         }
     }
 

@@ -6,6 +6,8 @@
     </appender>
 
     <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+    <logger name="org.hibernate.cache" level="DEBUG"/>
+    <logger name="org.hibernate.stat" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

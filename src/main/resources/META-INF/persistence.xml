@@ -14,9 +14,7 @@
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
 
-            <!--<property name="hibernate.generate_statistics" value="true"/>-->
-            
-            <!-- <property name="jakarta.persistence.validation.mode" value="NONE"/> -->
+            <property name="hibernate.generate_statistics" value="true"/>
         </properties>
     </persistence-unit>
 </persistence>
