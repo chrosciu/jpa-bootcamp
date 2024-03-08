@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,12 +25,15 @@ import java.util.List;
 @Entity
 @Slf4j
 @NamedEntityGraph(name = Area.WITH_COMPANIES, attributeNodes = @NamedAttributeNode(Area_.COMPANIES))
-class Area {
+public class Area {
     static final String WITH_COMPANIES = "areaWithCompanies";
 
     @GeneratedValue
     @Id
     private Long id;
+
+    @Version
+    private long version;
 
     private String name;
 

@@ -1,6 +1,8 @@
 package eu.chrost.domain;
 
+import eu.chrost.util.Utils;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.Persistence;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
@@ -10,13 +12,14 @@ import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static eu.chrost.util.Utils.runAsync;
+import static eu.chrost.util.Utils.runAsyncSingleTask;
 import static eu.chrost.util.Utils.runInTransaction;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -150,7 +153,7 @@ class CompanyJpaTest {
         });
         runInTransaction(entityManagerFactory, entityManager -> {
             var persistedCompany = entityManager.find(Company.class, company.getId());
-            runAsync(() -> runInTransaction(entityManagerFactory, em -> {
+            runAsyncSingleTask(() -> runInTransaction(entityManagerFactory, em -> {
                 var pc = em.find(Company.class, company.getId());
                 pc.setName(newName);
             }));
@@ -346,4 +349,51 @@ class CompanyJpaTest {
             assertThat(statistics.getEntityLoadCount()).isEqualTo(3);
         });
     }
+
+    @Test
+    @Disabled("@Version field in Team must be removed")
+    void given_no_locks_last_committed_transaction_wins() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(area);
+        });
+        Utils.runAsyncMultipleTasks(List.of(
+                new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.NONE, 1, 5, entityManagerFactory),
+                new UpdateAreaNameTask(area.getId(), "France", LockModeType.NONE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            assertThat(persistedArea.getName()).isEqualTo("Germany");
+        });
+    }
+
+    @Test
+    void given_versioned_entity_when_first_transaction_tries_to_override_changes_from_second_transaction_then_first_transaction_is_rolled_back() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(area);
+        });
+        Utils.runAsyncMultipleTasks(List.of(
+                new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.NONE, 1, 5, entityManagerFactory),
+                new UpdateAreaNameTask(area.getId(), "France", LockModeType.NONE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            assertThat(persistedArea.getName()).isEqualTo("France");
+        });
+    }
+
+    @Test
+    void given_two_transactions_when_first_transactions_acquired_the_lock_then_second_transaction_waits_for_first_transaction_to_release_the_lock() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(area);
+        });
+        Utils.runAsyncMultipleTasks(List.of(
+                new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.PESSIMISTIC_WRITE, 1, 5, entityManagerFactory),
+                new UpdateAreaNameTask(area.getId(), "France", LockModeType.PESSIMISTIC_WRITE, 2, 3, entityManagerFactory)
+        ));
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            assertThat(persistedArea.getName()).isEqualTo("France");
+        });
+    }
+
 }

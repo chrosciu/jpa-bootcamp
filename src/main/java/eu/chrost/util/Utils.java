@@ -7,6 +7,9 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.function.Consumer;
 
 @UtilityClass
@@ -34,7 +37,17 @@ public class Utils {
     }
 
     @SneakyThrows
-    public static void runAsync(Runnable runnable) {
+    public static void runAsyncSingleTask(Runnable runnable) {
         Thread.ofVirtual().start(runnable).join();
+    }
+
+    @SneakyThrows
+    public static void runAsyncMultipleTasks(List<Callable<?>> tasks) {
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            for (var task : tasks) {
+                scope.fork(task);
+            }
+            scope.join();//.throwIfFailed();
+        }
     }
 }
