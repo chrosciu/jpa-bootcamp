@@ -23,7 +23,7 @@ import java.util.List;
 @ToString(exclude = "companies")
 @Entity
 @Slf4j
-@NamedEntityGraph(name = Area.WITH_COMPANIES, attributeNodes = @NamedAttributeNode("companies"))
+@NamedEntityGraph(name = Area.WITH_COMPANIES, attributeNodes = @NamedAttributeNode(Area_.COMPANIES))
 class Area {
     static final String WITH_COMPANIES = "areaWithCompanies";
 

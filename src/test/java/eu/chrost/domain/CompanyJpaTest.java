@@ -321,7 +321,7 @@ class CompanyJpaTest {
         });
         runInTransaction(entityManagerFactory, entityManager -> {
             var entityGraph = entityManager.createEntityGraph(Area.class);
-            entityGraph.addAttributeNodes("companies");
+            entityGraph.addAttributeNodes(Area_.companies);
             // All attributes specified in entity graph will be treated as Eager, and all attribute not specified will be treated as Lazy
             // Map<String, Object> properties = Map.of("jakarta.persistence.fetchgraph", entityGraph);
             // All attributes specified in entity graph will be treated as Eager, and all attribute not specified use their default/mapped value
