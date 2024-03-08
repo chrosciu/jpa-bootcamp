@@ -19,6 +19,7 @@ class CompanyJpaTest {
     private EntityManagerFactory entityManagerFactory;
     //private Statistics statistics;
     private Company company;
+    private Area area;
 
     @BeforeEach
     void setUp() {
@@ -26,6 +27,7 @@ class CompanyJpaTest {
         //statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
 
         company = company();
+        area = area();
     }
 
     @AfterEach
@@ -44,6 +46,12 @@ class CompanyJpaTest {
     private Company company() {
         return Company.builder()
                 .name("Januszex sp. z o.o.")
+                .build();
+    }
+
+    private Area area() {
+        return Area.builder()
+                .name("Poland")
                 .build();
     }
 
@@ -176,6 +184,51 @@ class CompanyJpaTest {
                 entityManager.persist(company);
                 entityManager.flush();
             }).isInstanceOf(ConstraintViolationException.class);
+        });
+    }
+
+    @Test
+    void when_persisting_entity_cascaded_entities_are_also_persisted() {
+        company.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            assertThat(persistedArea.getName()).isEqualTo(area.getName());
+            assertThat(persistedArea.getCompanies()).extracting(Company::getName).containsExactly(company.getName());
+        });
+    }
+
+    @Test
+    void when_removing_entity_cascaded_entities_are_also_removed() {
+        company.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            entityManager.remove(persistedArea);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(persistedCompany).isNull();
+        });
+    }
+
+    @Test
+    void when_entity_is_orphaned_it_is_removed_with_orphan_removal_flag() {
+        company.setArea(area);
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedArea = entityManager.find(Area.class, area.getId());
+            persistedArea.getCompanies().clear();
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(persistedCompany).isNull();
         });
     }
 }

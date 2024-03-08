@@ -1,33 +1,33 @@
 package eu.chrost.domain;
 
-import eu.chrost.validator.MirexProhibited;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = "companies")
 @Entity
-@Table(name = "companies")
-@MirexProhibited
-public class Company {
+@Slf4j
+class Area {
     @GeneratedValue
     @Id
     private Long id;
 
-    @Size(max = 20)
     private String name;
 
-    @ManyToOne(cascade = {CascadeType.PERSIST})
-    private Area area;
+    @OneToMany(mappedBy = "area", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, orphanRemoval = true)
+    private List<Company> companies;
 }
