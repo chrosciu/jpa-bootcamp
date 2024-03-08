@@ -2,6 +2,8 @@ package eu.chrost.domain;
 
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,5 +135,36 @@ class CompanyJpaTest {
             entityManager.refresh(persistedCompany);
             assertThat(persistedCompany.getName()).isEqualTo(newName);
         });
+    }
+
+    @Test
+    void givenAnEntityWithBrokenConstraints_whenFlush_thenConstraintValidationExceptionIsThrown() {
+        company.setName("JaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaanuszPol");
+        runInTransaction(entityManagerFactory, entityManager -> {
+            assertThatThrownBy(() -> {
+                entityManager.persist(company);
+                entityManager.flush();
+            }).isInstanceOf(ConstraintViolationException.class);
+        });
+    }
+
+    @Test
+    void givenAnEntityWithBrokenConstraints_whenTriggerValidationManually_thenConstraintViolationsAreDetected() {
+        company.setName("JaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaanuszPol");
+        try (var validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            var validator = validatorFactory.getValidator();
+            var constraintViolations = validator.validate(company);
+            assertThat(constraintViolations).isNotEmpty();
+        }
+    }
+
+    @Test
+    void givenAnValidEntity_whenTriggerValidationManually_thenConstraintViolationsAreEmpty() {
+        company.setName("Cebulpol");
+        try (var validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            var validator = validatorFactory.getValidator();
+            var constraintViolations = validator.validate(company);
+            assertThat(constraintViolations).isEmpty();
+        }
     }
 }
