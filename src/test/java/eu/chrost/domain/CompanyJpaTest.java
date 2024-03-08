@@ -167,4 +167,15 @@ class CompanyJpaTest {
             assertThat(constraintViolations).isEmpty();
         }
     }
+
+    @Test
+    void givenAnEntityWithBrokenCustomConstraints_whenFlush_thenConstraintValidationExceptionIsThrown() {
+        company.setName("Mirex");
+        runInTransaction(entityManagerFactory, entityManager -> {
+            assertThatThrownBy(() -> {
+                entityManager.persist(company);
+                entityManager.flush();
+            }).isInstanceOf(ConstraintViolationException.class);
+        });
+    }
 }

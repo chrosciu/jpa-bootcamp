@@ -1,5 +1,6 @@
 package eu.chrost.domain;
 
+import eu.chrost.validator.MirexProhibited;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -16,7 +17,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "companies")
-class Company {
+@MirexProhibited
+public class Company {
     @GeneratedValue
     @Id
     private Long id;
