@@ -4,8 +4,6 @@ import eu.chrost.util.Utils;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.SessionFactory;
-import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,24 +13,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 class CompanyJpaTest {
     private EntityManagerFactory entityManagerFactory;
-    private Statistics statistics;
+    //private Statistics statistics;
     private Company company;
 
     @BeforeEach
     void setUp() {
         entityManagerFactory = Persistence.createEntityManagerFactory("workshop");
-        statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        //statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
 
         company = company();
     }
 
     @AfterEach
     void cleanUp() {
-        if (statistics != null) {
-            log.info("{}", statistics);
-            statistics.clear();
-            statistics = null;
-        }
+//        if (statistics != null) {
+//            log.info("{}", statistics);
+//            statistics.clear();
+//            statistics = null;
+//        }
         if (entityManagerFactory != null) {
             entityManagerFactory.close();
             entityManagerFactory = null;
