@@ -396,4 +396,36 @@ class CompanyJpaTest {
         });
     }
 
+    @Test
+    void givenAnManagedEntity_whenLoadEntityWithTheSameIdInTheSameSession_thenTheSameObjectIsReturned() {
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(0);
+            var persistedCompany = entityManager.find(Company.class, company.getId());
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(1);
+            var persistedCompanyWithTheSameId = entityManager.find(Company.class, company.getId());
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(1);
+            assertThat(persistedCompany).isSameAs(persistedCompanyWithTheSameId);
+        });
+    }
+
+    @Test
+    void givenAnManagedEntity_whenLoadEntityWithTheSameIdInAnotherSession_thenTheDifferetObjectIsReturned() {
+        AtomicReference<Company> persistedCompany = new AtomicReference<>();
+        runInTransaction(entityManagerFactory, entityManager -> {
+            entityManager.persist(company);
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            persistedCompany.set(entityManager.find(Company.class, company.getId()));
+        });
+        runInTransaction(entityManagerFactory, entityManager -> {
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(1);
+            var persistedCompanyInAnotherContext = entityManager.find(Company.class, company.getId());
+            assertThat(statistics.getEntityLoadCount()).isEqualTo(2);
+            assertThat(persistedCompanyInAnotherContext).isNotSameAs(persistedCompany.get());
+        });
+    }
+
 }
