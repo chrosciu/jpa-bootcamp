@@ -1,6 +1,5 @@
 package eu.chrost.domain;
 
-import eu.chrost.util.Utils;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Persistence;
@@ -19,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static eu.chrost.util.Utils.runAsyncMultipleTasks;
 import static eu.chrost.util.Utils.runAsyncSingleTask;
 import static eu.chrost.util.Utils.runInTransaction;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -351,12 +351,12 @@ class CompanyJpaTest {
     }
 
     @Test
-    @Disabled("@Version field in Team must be removed")
+    @Disabled("@Version field in Area must be removed")
     void given_no_locks_last_committed_transaction_wins() {
         runInTransaction(entityManagerFactory, entityManager -> {
             entityManager.persist(area);
         });
-        Utils.runAsyncMultipleTasks(List.of(
+        runAsyncMultipleTasks(List.of(
                 new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.NONE, 1, 5, entityManagerFactory),
                 new UpdateAreaNameTask(area.getId(), "France", LockModeType.NONE, 2, 3, entityManagerFactory)
         ));
@@ -371,7 +371,7 @@ class CompanyJpaTest {
         runInTransaction(entityManagerFactory, entityManager -> {
             entityManager.persist(area);
         });
-        Utils.runAsyncMultipleTasks(List.of(
+        runAsyncMultipleTasks(List.of(
                 new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.NONE, 1, 5, entityManagerFactory),
                 new UpdateAreaNameTask(area.getId(), "France", LockModeType.NONE, 2, 3, entityManagerFactory)
         ));
@@ -386,7 +386,7 @@ class CompanyJpaTest {
         runInTransaction(entityManagerFactory, entityManager -> {
             entityManager.persist(area);
         });
-        Utils.runAsyncMultipleTasks(List.of(
+        runAsyncMultipleTasks(List.of(
                 new UpdateAreaNameTask(area.getId(), "Germany", LockModeType.PESSIMISTIC_WRITE, 1, 5, entityManagerFactory),
                 new UpdateAreaNameTask(area.getId(), "France", LockModeType.PESSIMISTIC_WRITE, 2, 3, entityManagerFactory)
         ));

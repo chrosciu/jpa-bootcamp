@@ -45,7 +45,7 @@ class UpdateAreaNameTask implements Callable<Void> {
         } finally {
             if (transaction != null && transaction.isActive()) {
                 log.info("[{}] before rollback", newName);
-                transaction.rollback();
+                transaction.setRollbackOnly();
                 log.info("[{}] after rollback", newName);
             }
             if (entityManager != null) {
