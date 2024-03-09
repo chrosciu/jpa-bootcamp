@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static eu.chrost.util.Utils.runAsyncMultipleTasks;
@@ -289,7 +290,7 @@ class CompanyJpaTest {
             entityManager.persist(company);
             entityManager.persist(otherCompany);
         });
-        AtomicReference<List<Company>> companiesProxy = new AtomicReference<>();
+        AtomicReference<Set<Company>> companiesProxy = new AtomicReference<>();
         runInTransaction(entityManagerFactory, entityManager -> {
             companiesProxy.set(entityManager.find(Area.class, area.getId()).getCompanies());
         });
